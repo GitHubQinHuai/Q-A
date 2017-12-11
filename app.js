@@ -6,8 +6,13 @@ var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
 //数据库配置文件
 var setting = require('./setting');
-//数据库操作实例
-var db = require('./model/db');
+
+//导入flash 会话以及数据库连接 插件
+var flash = require('connect-flash');
+var session = require('express-session');
+var MongoStore = require('connect-mongo')(session);
+// //数据库操作实例
+// var db = require('./model/db');
 
 //添加路由文件
 var routes = require('./routes/index');
@@ -26,6 +31,23 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
+
+app.use(flash());
+app.use(session({
+    //加密
+    secret:setting.cookieSecret,
+    cookie:{maxAge:1000*60*60*24*30},
+    //加密
+    key:setting.db,
+    //连接数据库地址
+    store:new MongoStore({
+        url:'mongodb://localhost/blog'
+    }),
+    //是否强制保存会话
+    resave:false,
+    //会话未修改的时候，是否保存
+    saveUninitialized:true
+}))
 
 //将app传递给路由供函数使用
 routes(app);
@@ -47,7 +69,7 @@ app.use(function(err, req, res, next) {
 
   // render the error page
   res.status(err.status || 500);
-  res.render('error');
+  res.render('err');
 });
 //添加监听
 app.listen(4000,function () {
